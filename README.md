@@ -48,7 +48,31 @@ $ docker run -p 8080:8080 validation-server
 2023-12-11 14:27:31.549  INFO 1 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
 2023-12-11 14:27:31.556  INFO 1 --- [           main] o.t.c.t.v.ValidationServerApplication    : Started ValidationServerApplication in 1.025 seconds (JVM running for 1.276)
 ```
-The container port `8080` is mapped on the host also on `8080`, so, the server is ready to be queried.
+The container port `8080` is mapped on the host also on `8080`, so, the server is ready to be queried from your `localhost`.
+
+### Calling the server from another container
+To enable another container to access the web server, initiate it within the same Docker network.
+First, identify the network's name of the container that will call the server:
+```shell
+$ docker inspect my_container --format "{{range \$key, \$value := .NetworkSettings.Networks}}{{\$key}} {{end}}"
+
+my_network
+```
+So, you have to start the validation server container in this network:
+```shell
+$ docker run --network my_network -p 8080:8080 --name my-validation-server validation-server
+
+[...]
+```
+Then, you can identify the server `IP` in this network:
+```shell
+$ docker network inspect my_network | jq -r '.[0].Containers[] | select(.Name == "my-validation-server").IPv4Address'
+www.xxx.yyy.zzz/mm
+```
+Where `www.xxx.yyy.zzz` is hte `IP` address of the validation server in the network and `mm` its subnet mask.
+So you can query the web server using this address `http://www.xxx.yyy.zzz:8080/....` 
+
+
 
 # Available endpoints
 
