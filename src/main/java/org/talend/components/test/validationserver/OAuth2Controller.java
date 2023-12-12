@@ -20,7 +20,7 @@ public class OAuth2Controller {
 
     public final static String authorization_header = "Authorization";
 
-    public final static String clientId = "client_id";
+    public final static String client_id = "client_id";
     public final static String client_secret = "client_secret";
     public final static String grant_type = "grant_type";
     public final static String scope = "scope";
@@ -37,7 +37,7 @@ public class OAuth2Controller {
     public Token clientCredentialsToken(
             @RequestParam(required = true) Map<String, String> urlencodedForm
     ) {
-        String clientIdValue = urlencodedForm.get(clientId);
+        String clientIdValue = urlencodedForm.get(client_id);
         String clientSecretValue = urlencodedForm.get(client_secret);
         String grantTypeValue = urlencodedForm.get(grant_type);
         String scopeValue = urlencodedForm.get(scope);
