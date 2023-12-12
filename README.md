@@ -82,14 +82,14 @@ To retrieve a token the query has to be as `POST` with header `Content-type: x-w
 - client_id = 1234567890
 - client_secret = secret_1234567890_
 - grant_type = client_credentials
-- scope = scA
+- scope = scA scB scC
 ```shell
 $ curl -X POST http://127.0.0.1:8080/oauth2/client-credentials/token \
      -H 'Content-Type: application/x-www-form-urlencoded' \
      -d 'client_id=1234567890' \
      -d 'client_secret=secret_1234567890_' \
      -d 'grant_type=client_credentials' \
-     -d 'scope=scA'
+     -d 'scope=scA scB scC'
 
 {"access_token":"_success_token_","token_type":"Bearer","expires_in":1702306621631}
 ```
@@ -101,7 +101,7 @@ $ curl -X POST http://127.0.0.1:8080/oauth2/client-credentials/token \
      -d 'client_id=xxxxx' \
      -d 'client_secret=xxxxxx' \
      -d 'grant_type=client_credentials' \
-     -d 'scope=scA'
+     -d 'scope=scA scB scC'
      
 {"message":"OAuth2 security issue.","cause":"Wrong credentials, can't provide token."}
 ```

@@ -14,6 +14,7 @@ import org.talend.components.test.validationserver.model.Token;
 import org.talend.components.test.validationserver.model.User;
 
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 public class OAuth2Controller {
@@ -27,25 +28,33 @@ public class OAuth2Controller {
 
     public final static String expectedClientId = "1234567890";
     public final static String expectedClientSecret = "secret_1234567890_";
-    public final static String expectedgrantType = "client_credentials";
-    public final static String expectedScope = "scA";
+    public final static String expectedGrantType = "client_credentials";
+    public final static String expectedScope = "scA scB scC";
 
     public final static String successToken = "_success_token_";
     public final static String tokenType = "Bearer";
 
     @PostMapping("/oauth2/client-credentials/token")
     public Token clientCredentialsToken(
-            @RequestParam(required = true) Map<String, String> urlencodedForm
+            @RequestParam(required = true) Map<String, String> urlencodedForm,
+            @RequestHeader(name = "expected_client_id") Optional<String> expectedClientIdParam,
+            @RequestHeader(name = "expected_client_secret") Optional<String> expectedClientSecretParam,
+            @RequestHeader(name = "expected_scope") Optional<String> expectedScopeParam,
+            @RequestHeader(name = "expected_additional") Optional<String> expectedAdditionalParam
     ) {
         String clientIdValue = urlencodedForm.get(client_id);
         String clientSecretValue = urlencodedForm.get(client_secret);
         String grantTypeValue = urlencodedForm.get(grant_type);
         String scopeValue = urlencodedForm.get(scope);
+        String additionalValue = urlencodedForm.getOrDefault("additional", "");
 
-        if(!expectedClientId.equals(clientIdValue) ||
-        !expectedClientSecret.equals(clientSecretValue) ||
-        !expectedgrantType.equals(grantTypeValue) ||
-        !expectedScope.equals(scopeValue)){
+
+
+        if(!expectedClientIdParam.orElse(expectedClientId).equals(clientIdValue) ||
+        !expectedClientSecretParam.orElse(expectedClientSecret).equals(clientSecretValue) ||
+        !expectedGrantType.equals(grantTypeValue) ||
+        !expectedScopeParam.orElse(expectedScope).equals(scopeValue) ||
+        !expectedAdditionalParam.orElse("").equals(additionalValue)){
             throw new OAuthException("Wrong credentials, can't provide token.");
         }
         Token token = new Token(successToken, tokenType, System.currentTimeMillis() + (1000 * 60 * 60));
