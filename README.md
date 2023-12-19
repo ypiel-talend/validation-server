@@ -76,6 +76,14 @@ So you can query the web server using this address `http://www.xxx.yyy.zzz:8080/
 
 # Available endpoints
 
+# Basic endpoints
+## Ping
+The `/ping` endpoint always responds with a `pong.` payload. It is just to check if the server is alive:
+```shell
+$ curl http://172.26.0.4:8080/ping
+pong.
+```
+
 # OAuth2.0
 ## Retrieve a token using client credential flow
 To retrieve a token the query has to be as `POST` with header `Content-type: x-www-form-urlencoded` and those form key/values:
