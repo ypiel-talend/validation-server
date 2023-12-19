@@ -67,13 +67,18 @@ public class OAuth2Controller {
             @RequestHeader(name=authorization_header, required = true) String authorization,
             @RequestParam(name="id", required = false) String id,
             @RequestParam(name="name", required = false) String name,
-            @RequestParam(name="active", required = false) String active
+            @RequestParam(name="active", required = false) String active,
+            @RequestHeader(name = "uppercase") Optional<Boolean> uppercase
     ) {
         checkToken(authorization);
 
         User user = new User(id == null ? 1 :Integer.parseInt(id),
                 name == null ? "Peter" : name,
                 active == null ? true : Boolean.parseBoolean(active));
+
+        if(uppercase.isPresent() && uppercase.get()){
+            user.setName(user.getName().toUpperCase());
+        }
 
         return user;
     }

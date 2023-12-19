@@ -77,7 +77,7 @@ class OAuth2ControllerTest {
             "BearerX _success_token_,,,,false"
     })
     public void getEntityTest(String secret, String id, String name, String active, Boolean success) {
-        Supplier<User> getUserSupplier = () -> controller.getEntity(secret, id, name, active);
+        Supplier<User> getUserSupplier = () -> controller.getEntity(secret, id, name, active, Optional.empty());
 
         if (success) {
             User user = getUserSupplier.get();
