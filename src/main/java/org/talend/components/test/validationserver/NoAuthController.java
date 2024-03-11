@@ -36,15 +36,15 @@ public class NoAuthController {
         return jsonContent;
     }
 
-    @PostMapping("/post")
-    public Map<String, String> post(@RequestBody String payload) throws IOException {
+    @PostMapping(value = "/post", produces = "application/json")
+    public Map<String, String> postPlainText(@RequestBody String payload) throws IOException {
         System.out.printf("Received Payload:\n%s\n--\nEND.\n", payload);
 
         return Collections.singletonMap("post_body", payload);
     }
 
-    @PostMapping("/echo")
-    public String echo(@RequestBody String payload) throws IOException {
+    @PostMapping(value="/post", produces = "text/plain")
+    public String postJSON(@RequestBody String payload) throws IOException {
         System.out.printf("Received Payload:\n%s\n--\nEND.\n", payload);
 
         return payload;

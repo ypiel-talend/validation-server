@@ -109,6 +109,19 @@ the
 world!
 ```
 
+## Post a payload
+The `/post` endpoint accepts `POST` verb and a body. It will return exactly the body it received as plain text or in
+a json document, depending the `Accept` header:
+```shell
+$ curl -X POST http://127.0.0.1:8080/post --data "Hello world !" -H "Accept: text/plain"  -H "Content-Type: text/plain"
+Hello world !
+```
+The `/echo` endpoint do quite the same but returns the received payload in a json object: 
+```shell
+$ curl -X POST http://127.0.0.1:8080/post --data "Hello world !" -H "Accept: text/plain"  -H "Content-Type: text/plain"
+{"post_body":"Hello world !"}
+```
+
 # OAuth2.0
 ## Retrieve a token using client credential flow
 To retrieve a token the query has to be as `POST` with header `Content-type: x-www-form-urlencoded` and those form key/values:
