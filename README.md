@@ -122,6 +122,139 @@ $ curl -X POST http://127.0.0.1:8080/post --data "Hello world !" -H "Accept: tex
 {"post_body":"Hello world !"}
 ```
 
+## Pagination
+There are two endpoints that deserve paginated elements.
+
+The `/paginate` one return a a JSON array that contains some json objects `{"id": i, "label": "element_" + i}`. It takes some parameters:
+- `total` : The total number of generated elements.
+- `offset` : From which index of element do you want to retrieve them ?
+- `limit` : How many elements do you want to retrieve ?
+
+```shell
+$ curl 'http://127.0.0.1:8080/paginate?total=100&offset=0&limit=5' | jq .
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   146    0   146    0     0  48666      0 --:--:-- --:--:-- --:--:-- 48666
+[
+  {
+    "id": 1,
+    "label": "element_1"
+  },
+  {
+    "id": 2,
+    "label": "element_2"
+  },
+  {
+    "id": 3,
+    "label": "element_3"
+  },
+  {
+    "id": 4,
+    "label": "element_4"
+  },
+  {
+    "id": 5,
+    "label": "element_5"
+  }
+]
+
+$ curl 'http://127.0.0.1:8080/paginate?total=100&offset=5&limit=5' | jq .
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   148    0   148    0     0  37000      0 --:--:-- --:--:-- --:--:-- 49333
+[
+  {
+    "id": 6,
+    "label": "element_6"
+  },
+  {
+    "id": 7,
+    "label": "element_7"
+  },
+  {
+    "id": 8,
+    "label": "element_8"
+  },
+  {
+    "id": 9,
+    "label": "element_9"
+  },
+  {
+    "id": 10,
+    "label": "element_10"
+  }
+]
+```
+
+The second enpoint is `paginateNestedArray`. It takes the same parameters and returns the same elements, but, the element array is a nested array in a root object:
+```shell
+$ curl 'http://127.0.0.1:8080/paginateNestedArray?total=100&offset=0&limit=5' | jq .
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   201    0   201    0     0  15461      0 --:--:-- --:--:-- --:--:-- 15461
+{
+  "offset": 0,
+  "limit": 5,
+  "total": 100,
+  "size": 5,
+  "elements": [
+    {
+      "id": 1,
+      "label": "element_1"
+    },
+    {
+      "id": 2,
+      "label": "element_2"
+    },
+    {
+      "id": 3,
+      "label": "element_3"
+    },
+    {
+      "id": 4,
+      "label": "element_4"
+    },
+    {
+      "id": 5,
+      "label": "element_5"
+    }
+  ]
+}
+
+$ curl 'http://127.0.0.1:8080/paginateNestedArray?total=100&offset=5&limit=5' | jq .
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   203    0   203    0     0  29000      0 --:--:-- --:--:-- --:--:-- 29000
+{
+  "offset": 5,
+  "limit": 5,
+  "total": 100,
+  "size": 5,
+  "elements": [
+    {
+      "id": 6,
+      "label": "element_6"
+    },
+    {
+      "id": 7,
+      "label": "element_7"
+    },
+    {
+      "id": 8,
+      "label": "element_8"
+    },
+    {
+      "id": 9,
+      "label": "element_9"
+    },
+    {
+      "id": 10,
+      "label": "element_10"
+    }
+  ]
+}
+```
+
 # OAuth2.0
 ## Retrieve a token using client credential flow
 To retrieve a token the query has to be as `POST` with header `Content-type: x-www-form-urlencoded` and those form key/values:
