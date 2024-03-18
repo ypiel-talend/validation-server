@@ -77,7 +77,7 @@ So you can query the web server using this address `http://www.xxx.yyy.zzz:8080/
 
 # Available endpoints
 
-# Basic endpoints
+# No authentication endpoints
 ## Ping
 The `/ping` endpoint always responds with a `pong.` payload. It is just to check if the server is alive.
 
@@ -255,7 +255,7 @@ $ curl 'http://127.0.0.1:8080/paginateNestedArray?total=100&offset=5&limit=5' | 
 }
 ```
 
-# OAuth2.0
+# OAuth2.0 validation endpoints 
 ## Retrieve a token using client credential flow
 To retrieve a token the query has to be as `POST` with header `Content-type: x-www-form-urlencoded` and those form key/values:
 - client_id = 1234567890
