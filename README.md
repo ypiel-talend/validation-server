@@ -18,6 +18,8 @@ And start the server:
 $ java -jar target/validation-server-0.0.1-SNAPSHOT.jar --server.port=9098
 ```
 The `--server.port` option let you define the port you want to listen to, `8080` is the default.
+
+Once the server is running, you can access its API swagger documentation: http://127.0.0.1:9098/swagger-ui/index.html
 ## Launch the server in a docker container
 You have to build the porject first, then create the docker image:
 ```shell
