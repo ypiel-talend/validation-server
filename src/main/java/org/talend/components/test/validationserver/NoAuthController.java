@@ -42,12 +42,6 @@ public class NoAuthController {
         return Collections.singletonMap("message", PONG);
     }
 
-    @GetMapping("/loadfile")
-    public String loadFile(@RequestParam(name="file", required = false) String file) throws IOException {
-        String jsonContent = new String(Files.readAllBytes(Paths.get(file)), StandardCharsets.UTF_8);
-        return jsonContent;
-    }
-
     @PostMapping(value = "/post", produces = "application/json")
     public Map<String, String> postPlainText(@RequestBody String payload) throws IOException {
         System.out.printf("Received Payload:\n%s\n--\nEND.\n", payload);
@@ -92,7 +86,7 @@ public class NoAuthController {
         }
         System.out.printf("%s / %s / %s\n", offset, limit, total);
 
-        List<Element> result = IntStream.rangeClosed(1, total).mapToObj(i -> new Element(i, String.format("element_%s", i))).collect(Collectors.toList());
+        List<Element> result = IntStream.rangeClosed(1, total).mapToObj(i -> new Element(i)).collect(Collectors.toList());
 
         if(offset >= total){
             return Collections.emptyList();
@@ -104,9 +98,24 @@ public class NoAuthController {
     }
 
     @Data
-    @AllArgsConstructor
     public final static class Element{
         private final int id;
         private final String label;
+        private final Element nested;
+
+        private final String nestedAsJson;
+
+        public Element(int id){
+            this.id = id;
+            this.label = String.format("element_%s", id);
+            if(id >= 0) {
+                this.nested = new Element(id * -1);
+                this.nestedAsJson = String.format("{\"id\": %s, \"label\": \"nested json %s\"}", id, id);
+            }
+            else{
+                this.nested = null;
+                this.nestedAsJson = null;
+            }
+        }
     }
 }

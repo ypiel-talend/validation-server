@@ -27,15 +27,6 @@ class NoAuthControllerTest {
     }
 
     @Test
-    public void loadFile() throws IOException {
-        URL resourceUrl = NoAuthControllerTest.class.getResource("/");
-        File f = new File(resourceUrl.getPath());
-        String file = f.getAbsolutePath() + "/loadFile/Simple.txt";
-        String content = controller.loadFile(file);
-        Assertions.assertEquals("This\nis\nan hellow world!", content);
-    }
-
-    @Test
     public void paginate() {
         List<NoAuthController.Element> paginate = controller.paginate(null, null, null);
         Assertions.assertEquals(NoAuthController.DEFAULT_PAGINATION_LIMIT, paginate.size());
