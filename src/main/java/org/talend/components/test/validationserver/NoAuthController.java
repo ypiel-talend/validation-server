@@ -1,7 +1,9 @@
 package org.talend.components.test.validationserver;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -9,27 +11,28 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @RestController
+@Log4j2
 public class NoAuthController {
 
     public final static String PONG = "pong.";
     public final static int DEFAULT_PAGINATION_OFFSET = 0;
     public final static int DEFAULT_PAGINATION_LIMIT = 10;
     public final static int DEFAULT_PAGINATION_TOTAL = 100;
+
+    private static int RETRY_503_ATTEMPTS = 0;
+    private static int RETRY_503_ATTEMPTS_SUCCESS = Integer.valueOf(System.getProperty("validation-server.noauth-controller.retry-503-attempts-success", "4"));
+
+    private static int RETRY_TIMEOUT_ATTEMPTS = 0;
+    private static int RETRY_TIMEOUT_ATTEMPTS_SUCCESS = Integer.valueOf(System.getProperty("validation-server.noauth-controller.retry-timeout-attempts-success", "4"));
+    private static long RETRY_TIMEOUT_ATTEMPTS_DELAY = Long.valueOf(System.getProperty("validation-server.noauth-controller.retry-timeout-attempts-delay", "3000"));
 
 
     @GetMapping(value = "/ping", produces = "text/plain")
@@ -44,16 +47,46 @@ public class NoAuthController {
 
     @PostMapping(value = "/post", produces = "application/json")
     public Map<String, String> postPlainText(@RequestBody String payload) throws IOException {
-        System.out.printf("Received Payload:\n%s\n--\nEND.\n", payload);
+        log.info(String.format("Received Payload:\n%s\n--\nEND.\n", payload));
 
         return Collections.singletonMap("post_body", payload);
     }
 
     @PostMapping(value="/post", produces = "text/plain")
     public String postJSON(@RequestBody String payload) throws IOException {
-        System.out.printf("Received Payload:\n%s\n--\nEND.\n", payload);
+        log.info(String.format("Received Payload:\n%s\n--\nEND.\n", payload));
 
         return payload;
+    }
+
+    @GetMapping(value="/retry503")
+    public ResponseEntity<Map<String, String>> retry503(){
+        if(++RETRY_503_ATTEMPTS >= RETRY_503_ATTEMPTS_SUCCESS){
+            RETRY_503_ATTEMPTS = 0;
+            return ResponseEntity.ok(Collections.singletonMap("success", "true"));
+        }
+        else{
+            return ResponseEntity
+                    .status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Collections.singletonMap("error", String.format("You have still to retry '%s' times.", (RETRY_503_ATTEMPTS_SUCCESS - RETRY_503_ATTEMPTS))));
+        }
+    }
+
+    @GetMapping(value="/retryTimeout")
+    public ResponseEntity<Map<String, String>> retryTimeout(){
+        if(++RETRY_TIMEOUT_ATTEMPTS >= RETRY_TIMEOUT_ATTEMPTS_SUCCESS){
+            RETRY_TIMEOUT_ATTEMPTS = 0;
+            return ResponseEntity.ok(Collections.singletonMap("message", "success"));
+        }
+        else{
+            try {
+                Thread.sleep(RETRY_TIMEOUT_ATTEMPTS_DELAY);
+            } catch (InterruptedException e) {
+                log.error("Timeout sleep failed.", e);
+            }
+            return ResponseEntity
+                    .ok(Collections.singletonMap("message", String.format("Wait for timeout will be disable in '%s' attempts.", (RETRY_TIMEOUT_ATTEMPTS_SUCCESS - RETRY_TIMEOUT_ATTEMPTS))));
+        }
     }
 
     @GetMapping(value = "/paginateNestedArray", produces = "application/json")

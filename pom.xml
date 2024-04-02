@@ -12,11 +12,11 @@
 
 	<groupId>org.talend.components.test</groupId>
 	<artifactId>validation-server</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<name>validation-server</name>
 	<description>Web server to validate Talend HTTP components.</description>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>21</java.version>
 		<spring-boot-starter-web.version>2.7.9</spring-boot-starter-web.version>
 	</properties>
 	<dependencies>

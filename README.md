@@ -15,7 +15,7 @@ $ mvn clean install
 ```
 And start the server:
 ```shell
-$ java -jar target/validation-server-0.0.1-SNAPSHOT.jar --server.port=9098
+$ java -jar target/validation-server-0.0.2-SNAPSHOT.jar --server.port=9098
 ```
 The `--server.port` option let you define the port you want to listen to, `8080` is the default.
 
@@ -41,7 +41,7 @@ $ docker run -p 8080:8080 validation-server
  =========|_|==============|___/=/_/_/_/
  :: Spring Boot ::                (v2.7.9)
 
-2023-12-11 14:27:30.779  INFO 1 --- [           main] o.t.c.t.v.ValidationServerApplication    : Starting ValidationServerApplication v0.0.1-SNAPSHOT using Java 11.0.16 on ae2f258eaccb with PID 1 (/validation-server-0.0.1-SNAPSHOT.jar started by root in /)
+2023-12-11 14:27:30.779  INFO 1 --- [           main] o.t.c.t.v.ValidationServerApplication    : Starting ValidationServerApplication v0.0.2-SNAPSHOT using Java 11.0.16 on ae2f258eaccb with PID 1 (/validation-server-0.0.2-SNAPSHOT.jar started by root in /)
 2023-12-11 14:27:30.780  INFO 1 --- [           main] o.t.c.t.v.ValidationServerApplication    : No active profile set, falling back to 1 default profile: "default"
 2023-12-11 14:27:31.310  INFO 1 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
 2023-12-11 14:27:31.316  INFO 1 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
@@ -256,6 +256,37 @@ $ curl 'http://127.0.0.1:8080/paginateNestedArray?total=100&offset=5&limit=5' | 
   ]
 }
 ```
+
+## Test backoff retry
+There are two endpoints to test HTTP client retry with backoff.
+
+### On 503 error
+The `/retry503` endpoint responds three out of four times a HTTP `503` error with this payload:
+```json
+{
+  "error": "You have still to retry '%s' times."
+}
+```
+The fourth call will return a `200` success HTTP with this one:
+```json
+{
+  "success": "true"
+}
+```
+If you prefer to return a success response before or after the fourth call you can overwrite this with this property `-Dvalidation-server.noauth-controller.retry-503-attempts-success=<nb attempts>`.
+
+
+### On timeout
+In the same way, the `/retryTimeout` will wait for `3000` milliseconds three out of four
+time before responding with a `200` successful HTTP with this payload:
+```json
+{
+  "message": "Wait for timeout will be disable in '%s' attempts."
+}
+```
+The fourth call will not wait before to respond.
+The `3000ms` default delay can be overwritten with this propery `-Dvalidation-server.noauth-controller.retry-timeout-attempts-delay=<delay>`.
+If you prefer to skip the delay before or after the fourth call you can overwrite this with this property `-Dvalidation-server.noauth-controller.retry-timeout-attempts-success=<nb attempts>`.
 
 # OAuth2.0 validation endpoints 
 ## Retrieve a token using client credential flow
