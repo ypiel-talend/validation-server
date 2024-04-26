@@ -7,11 +7,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,26 +62,24 @@ public class NoAuthController {
         return payload;
     }
 
-    @GetMapping(value="/retry503")
-    public ResponseEntity<Map<String, String>> retry503(){
-        if(++RETRY_503_ATTEMPTS >= RETRY_503_ATTEMPTS_SUCCESS){
+    @GetMapping(value = "/retry503")
+    public ResponseEntity<Map<String, String>> retry503() {
+        if (++RETRY_503_ATTEMPTS >= RETRY_503_ATTEMPTS_SUCCESS) {
             RETRY_503_ATTEMPTS = 0;
             return ResponseEntity.ok(Collections.singletonMap("success", "true"));
-        }
-        else{
+        } else {
             return ResponseEntity
                     .status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Collections.singletonMap("error", String.format("You have still to retry '%s' times.", (RETRY_503_ATTEMPTS_SUCCESS - RETRY_503_ATTEMPTS))));
         }
     }
 
-    @GetMapping(value="/retryTimeout")
-    public ResponseEntity<Map<String, String>> retryTimeout(){
-        if(++RETRY_TIMEOUT_ATTEMPTS >= RETRY_TIMEOUT_ATTEMPTS_SUCCESS){
+    @GetMapping(value = "/retryTimeout")
+    public ResponseEntity<Map<String, String>> retryTimeout() {
+        if (++RETRY_TIMEOUT_ATTEMPTS >= RETRY_TIMEOUT_ATTEMPTS_SUCCESS) {
             RETRY_TIMEOUT_ATTEMPTS = 0;
             return ResponseEntity.ok(Collections.singletonMap("message", "success"));
-        }
-        else{
+        } else {
             try {
                 Thread.sleep(RETRY_TIMEOUT_ATTEMPTS_DELAY);
             } catch (InterruptedException e) {
@@ -90,9 +91,9 @@ public class NoAuthController {
     }
 
     @GetMapping(value = "/paginateNestedArray", produces = "application/json")
-    public Map<String, Object> paginateNestedArray(@RequestParam(name="offset", required = false) Integer offset,
-                                  @RequestParam(name="limit", required = false) Integer limit,
-                                  @RequestParam(name="total", required = false) Integer total){
+    public Map<String, Object> paginateNestedArray(@RequestParam(name = "offset", required = false) Integer offset,
+                                                   @RequestParam(name = "limit", required = false) Integer limit,
+                                                   @RequestParam(name = "total", required = false) Integer total) {
         List<Element> elements = paginate(offset, limit, total);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("offset", offset);
@@ -105,23 +106,23 @@ public class NoAuthController {
     }
 
     @GetMapping(value = "/paginate", produces = "application/json")
-    public List<Element> paginate(@RequestParam(name="offset", required = false) Integer offset,
-                                        @RequestParam(name="limit", required = false) Integer limit,
-                                        @RequestParam(name="total", required = false) Integer total){
-        if(offset == null){
+    public List<Element> paginate(@RequestParam(name = "offset", required = false) Integer offset,
+                                  @RequestParam(name = "limit", required = false) Integer limit,
+                                  @RequestParam(name = "total", required = false) Integer total) {
+        if (offset == null) {
             offset = DEFAULT_PAGINATION_OFFSET;
         }
-        if(limit == null){
+        if (limit == null) {
             limit = DEFAULT_PAGINATION_LIMIT;
         }
-        if(total == null){
+        if (total == null) {
             total = DEFAULT_PAGINATION_TOTAL;
         }
         System.out.printf("%s / %s / %s\n", offset, limit, total);
 
         List<Element> result = IntStream.rangeClosed(1, total).mapToObj(i -> new Element(i)).collect(Collectors.toList());
 
-        if(offset >= total){
+        if (offset >= total) {
             return Collections.emptyList();
         }
 
@@ -130,22 +131,29 @@ public class NoAuthController {
         return result;
     }
 
+    @RequestMapping("/status")
+    public ResponseEntity<Map<String, String>> status(@RequestParam(name = "status") int status, @RequestParam(name = "message") String message) {
+        Map<String, String> body = new HashMap<>();
+        body.put("status", String.valueOf(status));
+        body.put("message", message);
+        return ResponseEntity.status(status).body(body);
+    }
+
     @Data
-    public final static class Element{
+    public final static class Element {
         private final int id;
         private final String label;
         private final Element nested;
 
         private final String nestedAsJson;
 
-        public Element(int id){
+        public Element(int id) {
             this.id = id;
             this.label = String.format("element_%s", id);
-            if(id >= 0) {
+            if (id >= 0) {
                 this.nested = new Element(id * -1);
                 this.nestedAsJson = String.format("{\"id\": %s, \"label\": \"nested json %s\"}", id, id);
-            }
-            else{
+            } else {
                 this.nested = null;
                 this.nestedAsJson = null;
             }
