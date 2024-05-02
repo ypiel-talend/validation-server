@@ -77,7 +77,9 @@ So you can query the web server using this address `http://www.xxx.yyy.zzz:8080/
 
 
 
-# Available endpoints
+# Available routes
+
+⚠️ All routes are not described in this section. You can reach the swagger to list all of them and test them: `http://<ip>>:<port>/swagger-ui/index.html`
 
 # No authentication endpoints
 ## Ping

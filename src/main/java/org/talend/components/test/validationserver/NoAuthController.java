@@ -1,5 +1,6 @@
 package org.talend.components.test.validationserver;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,9 @@ public class NoAuthController {
     private static int RETRY_TIMEOUT_ATTEMPTS_SUCCESS = Integer.valueOf(System.getProperty("validation-server.noauth-controller.retry-timeout-attempts-success", "4"));
     private static long RETRY_TIMEOUT_ATTEMPTS_DELAY = Long.valueOf(System.getProperty("validation-server.noauth-controller.retry-timeout-attempts-delay", "3000"));
 
+    private static int PAGINATION_WITH_RETRY_503_ATTEMPTS = 0;
+    private static int PAGINATION_WITH_RETRY_503_ATTEMPTS_SUCCESS = Integer.valueOf(System.getProperty("validation-server.noauth-controller.pagination-with-retry-503-attempts-success", "3"));
+
 
     @GetMapping(value = "/ping", produces = "text/plain")
     public String pingTextPlain() {
@@ -49,14 +53,15 @@ public class NoAuthController {
     }
 
     @PostMapping(value = "/post", produces = "application/json")
-    public Map<String, String> postPlainText(@RequestBody String payload) throws IOException {
+    @Operation(description = "Do an echo of the sent payload. If 'Accept' header is 'application/json', it will encapsulate the payload in a json document.")
+    public Map<String, String> postPlainText(@RequestBody String payload)  {
         log.info(String.format("Received Payload:\n%s\n--\nEND.\n", payload));
 
         return Collections.singletonMap("post_body", payload);
     }
 
     @PostMapping(value="/post", produces = "text/plain")
-    public String postJSON(@RequestBody String payload) throws IOException {
+    public String postJSON(@RequestBody String payload) {
         log.info(String.format("Received Payload:\n%s\n--\nEND.\n", payload));
 
         return payload;
@@ -103,6 +108,23 @@ public class NoAuthController {
         result.put("elements", elements);
 
         return result;
+    }
+
+    @GetMapping(value = "/paginateWithRetry", produces = "application/json")
+    public ResponseEntity<?> paginateWithRetry(@RequestParam(name = "offset", required = false) Integer offset,
+                                  @RequestParam(name = "limit", required = false) Integer limit,
+                                  @RequestParam(name = "total", required = false) Integer total) {
+
+        if (++PAGINATION_WITH_RETRY_503_ATTEMPTS >= PAGINATION_WITH_RETRY_503_ATTEMPTS_SUCCESS) {
+            PAGINATION_WITH_RETRY_503_ATTEMPTS = 0;
+            return ResponseEntity.ok(paginate(offset, limit, total));
+        } else {
+            return ResponseEntity
+                    .status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Collections.singletonMap("error", String.format("You have still to retry '%s' times.", (PAGINATION_WITH_RETRY_503_ATTEMPTS_SUCCESS - PAGINATION_WITH_RETRY_503_ATTEMPTS))));
+        }
+
+
     }
 
     @GetMapping(value = "/paginate", produces = "application/json")
