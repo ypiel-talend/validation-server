@@ -80,7 +80,7 @@ public class NoAuthController {
     }
 
     @GetMapping(value = "/retryTimeout")
-    public ResponseEntity<Map<String, String>> retryTimeout() {
+    public synchronized ResponseEntity<Map<String, String>> retryTimeout() {
         if (++RETRY_TIMEOUT_ATTEMPTS >= RETRY_TIMEOUT_ATTEMPTS_SUCCESS) {
             RETRY_TIMEOUT_ATTEMPTS = 0;
             return ResponseEntity.ok(Collections.singletonMap("message", "success"));
