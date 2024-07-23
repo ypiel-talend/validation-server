@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.http.ResponseEntity;
 import org.talend.components.test.validationserver.exception.OAuthException;
 import org.talend.components.test.validationserver.model.Token;
 import org.talend.components.test.validationserver.model.User;
@@ -25,18 +26,20 @@ class OAuth2ControllerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1234567890,secret_1234567890_,client_credentials,scA scB scC,true,,,,",
-            "1234567890X,secret_1234567890_,client_credentials,scA scB scC,false,,,,",
-            "1234567890,secret_1234567890_X,client_credentials,scA scB scC,false,,,,",
-            "1234567890,secret_1234567890_,client_credentialsX,scA scB scC,false,,,,",
-            "1234567890,secret_1234567890_,client_credentials,scA scB scCX,false,,,,",
-            "azerty,secret_1234567890_,client_credentials,scA scB scC,true,azerty,,,",
-            "1234567890,azerty,client_credentials,scA scB scC,true,,azerty,,",
-            "1234567890,secret_1234567890_,client_credentials,azerty,true,,,azerty,",
-            "1234567890,secret_1234567890_,client_credentials,scA scB scC,true,,,,azerty"
+            "1234567890,secret_1234567890_,client_credentials,scA scB scC,true,,,,,false",
+            "1234567890,secret_1234567890_,client_credentials,scA scB scC,true,,,,,true",
+            "1234567890X,secret_1234567890_,client_credentials,scA scB scC,false,,,,,false",
+            "1234567890,secret_1234567890_X,client_credentials,scA scB scC,false,,,,,false",
+            "1234567890,secret_1234567890_,client_credentialsX,scA scB scC,false,,,,,false",
+            "1234567890,secret_1234567890_,client_credentials,scA scB scCX,false,,,,,false",
+            "azerty,secret_1234567890_,client_credentials,scA scB scC,true,azerty,,,,false",
+            "1234567890,azerty,client_credentials,scA scB scC,true,,azerty,,,false",
+            "1234567890,secret_1234567890_,client_credentials,azerty,true,,,azerty,,false",
+            "1234567890,secret_1234567890_,client_credentials,scA scB scC,true,,,,azerty,false"
     })
     public void clientCredentialsTokenTest(String clientId, String clientSecret, String grantType, String scope, Boolean success,
-                                           String expectedClientId, String expectedClientSecret, String expectedScope, String expectedAdditional) {
+                                           String expectedClientId, String expectedClientSecret, String expectedScope,
+                                           String expectedAdditional, String expiresInAsString) {
         Map<String, String> urlencodedForm = new HashMap<>();
         urlencodedForm.put(OAuth2Controller.client_id, clientId);
         urlencodedForm.put(OAuth2Controller.client_secret, clientSecret);
@@ -47,17 +50,27 @@ class OAuth2ControllerTest {
             urlencodedForm.put("additional", expectedAdditional);
         }
 
-        Supplier<Token> getTokenSupplier = () -> controller.clientCredentialsToken(urlencodedForm,
+        Supplier<ResponseEntity<Token<?>>> getTokenSupplier = () -> controller.clientCredentialsToken(urlencodedForm,
                 Optional.ofNullable(expectedClientId),
                 Optional.ofNullable(expectedClientSecret),
                 Optional.ofNullable(expectedScope),
-                Optional.ofNullable(expectedAdditional));
+                Optional.ofNullable(expectedAdditional),
+                Optional.ofNullable(expiresInAsString));
 
         if (success) {
-            Token token = getTokenSupplier.get();
+            ResponseEntity<Token<?>> token = getTokenSupplier.get();
             Assertions.assertNotNull(token);
-            Assertions.assertEquals(token.getAccess_token(), OAuth2Controller.successToken);
-            Assertions.assertEquals(token.getToken_type(), OAuth2Controller.tokenType);
+            Assertions.assertEquals(token.getBody().getAccess_token(), OAuth2Controller.successToken);
+            Assertions.assertEquals(token.getBody().getToken_type(), OAuth2Controller.tokenType);
+
+            Object expiresIn = token.getBody().getExpires_in();
+            if("true".equals(expiresInAsString)){
+                Assertions.assertTrue(expiresIn instanceof String);
+            }
+            else{
+                Assertions.assertTrue(expiresIn instanceof Long);
+            }
+
         } else {
             Assertions.assertThrows(OAuthException.class, () -> {
                 getTokenSupplier.get();

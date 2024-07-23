@@ -319,6 +319,18 @@ $ curl -X POST http://127.0.0.1:8080/oauth2/client-credentials/token \
      
 {"message":"OAuth2 security issue.","cause":"Wrong credentials, can't provide token."}
 ```
+You can also force the type of `expires_in` to be `long` (as expected in the OAUTH specification) or `String` (as returned by some server):
+```shell
+$ curl -X POST http://127.0.0.1:8080/oauth2/client-credentials/token \
+     -H 'Content-Type: application/x-www-form-urlencoded' \
+     -d 'client_id=1234567890' \
+     -d 'client_secret=secret_1234567890_' \
+     -d 'grant_type=client_credentials' \
+     -d 'scope=scA scB scC'
+     -H 'expected_expires_as_string: true'
+
+{"access_token":"_success_token_","token_type":"Bearer","expires_in":"1721731343667"}
+```
 ## Using the retrieved token
 You can ask for `user` entity in oauth section. It will expect the token:
 ```shell

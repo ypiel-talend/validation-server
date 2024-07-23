@@ -4,11 +4,30 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
-public class Token {
+public abstract class Token<T> {
 
-    private String access_token;
-    private String token_type;
-    private long expires_in;
+    protected String access_token;
+    protected String token_type;
+    protected T expires_in;
+
+    @Data
+    public static class TokenWithLongExpiresIn extends Token<Long>{
+
+        public TokenWithLongExpiresIn(final String access_token, final String token_type, final Long expires_in){
+            this.access_token = access_token;
+            this.token_type = token_type;
+            this.expires_in = expires_in;
+        }
+    }
+
+    @Data
+    public static class TokenWithStringExpiresIn extends Token<String>{
+
+        public TokenWithStringExpiresIn(final String access_token, final String token_type, final String expires_in){
+            this.access_token = access_token;
+            this.token_type = token_type;
+            this.expires_in = expires_in;
+        }
+    }
 
 }

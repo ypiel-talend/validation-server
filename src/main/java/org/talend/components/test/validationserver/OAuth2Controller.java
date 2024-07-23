@@ -1,6 +1,7 @@
 package org.talend.components.test.validationserver;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,20 +36,19 @@ public class OAuth2Controller {
     public final static String tokenType = "Bearer";
 
     @PostMapping("/oauth2/client-credentials/token")
-    public Token clientCredentialsToken(
+    public ResponseEntity<Token<?>> clientCredentialsToken(
             @RequestParam(required = true) Map<String, String> urlencodedForm,
             @RequestHeader(name = "expected_client_id") Optional<String> expectedClientIdParam,
             @RequestHeader(name = "expected_client_secret") Optional<String> expectedClientSecretParam,
             @RequestHeader(name = "expected_scope") Optional<String> expectedScopeParam,
-            @RequestHeader(name = "expected_additional") Optional<String> expectedAdditionalParam
+            @RequestHeader(name = "expected_additional") Optional<String> expectedAdditionalParam,
+            @RequestHeader(name = "expected_expires_as_string") Optional<String> expectedExpiresAsString
     ) {
         String clientIdValue = urlencodedForm.get(client_id);
         String clientSecretValue = urlencodedForm.get(client_secret);
         String grantTypeValue = urlencodedForm.get(grant_type);
         String scopeValue = urlencodedForm.get(scope);
         String additionalValue = urlencodedForm.getOrDefault("additional", "");
-
-
 
         if(!expectedClientIdParam.orElse(expectedClientId).equals(clientIdValue) ||
         !expectedClientSecretParam.orElse(expectedClientSecret).equals(clientSecretValue) ||
@@ -57,9 +57,14 @@ public class OAuth2Controller {
         !expectedAdditionalParam.orElse("").equals(additionalValue)){
             throw new OAuthException("Wrong credentials, can't provide token.");
         }
-        Token token = new Token(successToken, tokenType, System.currentTimeMillis() + (1000 * 60 * 60));
+        Token token = new Token.TokenWithLongExpiresIn(successToken, tokenType, System.currentTimeMillis() + (1000 * 60 * 60));
 
-        return token;
+        if (expectedExpiresAsString.isPresent() && expectedExpiresAsString.get().equalsIgnoreCase("true")) {
+            Token.TokenWithStringExpiresIn tokenWithStringExpiresIn = new Token.TokenWithStringExpiresIn(successToken, tokenType, String.valueOf(token.getExpires_in()));
+            return ResponseEntity.ok(tokenWithStringExpiresIn);
+        }
+
+        return ResponseEntity.ok(token);
     }
 
     @GetMapping("/oauth2/get/user")
