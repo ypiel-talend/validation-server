@@ -20,7 +20,8 @@ import java.util.Optional;
 @RestController
 public class OAuth2Controller {
 
-    public final static String authorization_header = "Authorization";
+    public final static String defaultAuthorization_header = "Authorization";
+    public final static String alternativeAuthorization_header = "AlternativeAuthorization";
 
     public final static String client_id = "client_id";
     public final static String client_secret = "client_secret";
@@ -33,10 +34,11 @@ public class OAuth2Controller {
     public final static String expectedScope = "scA scB scC";
 
     public final static String successToken = "_success_token_";
-    public final static String tokenType = "Bearer";
+    public final static String defaultTokenType = "Bearer";
+    public final static String alternativeTokenType = "AlternativeTokenPrefix";
 
     @PostMapping("/oauth2/client-credentials/token")
-    public ResponseEntity<Token<?>> clientCredentialsToken(
+    public ResponseEntity<?> clientCredentialsToken(
             @RequestParam(required = true) Map<String, String> urlencodedForm,
             @RequestHeader(name = "expected_client_id") Optional<String> expectedClientIdParam,
             @RequestHeader(name = "expected_client_secret") Optional<String> expectedClientSecretParam,
@@ -50,53 +52,87 @@ public class OAuth2Controller {
         String scopeValue = urlencodedForm.get(scope);
         String additionalValue = urlencodedForm.getOrDefault("additional", "");
 
-        if(!expectedClientIdParam.orElse(expectedClientId).equals(clientIdValue) ||
-        !expectedClientSecretParam.orElse(expectedClientSecret).equals(clientSecretValue) ||
-        !expectedGrantType.equals(grantTypeValue) ||
-        !expectedScopeParam.orElse(expectedScope).equals(scopeValue) ||
-        !expectedAdditionalParam.orElse("").equals(additionalValue)){
-            throw new OAuthException("Wrong credentials, can't provide token.");
+        if (!expectedClientIdParam.orElse(expectedClientId).equals(clientIdValue) ||
+                !expectedClientSecretParam.orElse(expectedClientSecret).equals(clientSecretValue) ||
+                !expectedGrantType.equals(grantTypeValue) ||
+                !expectedScopeParam.orElse(expectedScope).equals(scopeValue) ||
+                !expectedAdditionalParam.orElse("").equals(additionalValue)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "invalid_credentials", "message", "Wrong credentials, can't provide token."));
         }
-        Token token = new Token.TokenWithLongExpiresIn(successToken, tokenType, System.currentTimeMillis() + (1000 * 60 * 60));
+        Token token = new Token.TokenWithLongExpiresIn(successToken, defaultTokenType, System.currentTimeMillis() + (1000 * 60 * 60));
 
         if (expectedExpiresAsString.isPresent() && expectedExpiresAsString.get().equalsIgnoreCase("true")) {
-            Token.TokenWithStringExpiresIn tokenWithStringExpiresIn = new Token.TokenWithStringExpiresIn(successToken, tokenType, String.valueOf(token.getExpires_in()));
+            Token.TokenWithStringExpiresIn tokenWithStringExpiresIn = new Token.TokenWithStringExpiresIn(successToken, defaultTokenType, String.valueOf(token.getExpires_in()));
             return ResponseEntity.ok(tokenWithStringExpiresIn);
         }
 
         return ResponseEntity.ok(token);
     }
 
-    @GetMapping("/oauth2/get/user")
-    public User getEntity(
-            @RequestHeader(name=authorization_header, required = true) String authorization,
-            @RequestParam(name="id", required = false) String id,
-            @RequestParam(name="name", required = false) String name,
-            @RequestParam(name="active", required = false) String active,
+    @GetMapping("/oauth2/alternative/get/user")
+    public ResponseEntity<?> getAlternativeEntity(
+            @RequestHeader(name = alternativeAuthorization_header, required = true) String authorization,
+            @RequestParam(name = "id", required = false) String id,
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "active", required = false) String active,
             @RequestHeader(name = "uppercase") Optional<Boolean> uppercase
     ) {
-        checkToken(authorization);
+        return getEntity(authorization, id, name, active, uppercase, alternativeTokenType, true);
+    }
 
-        User user = new User(id == null ? 1 :Integer.parseInt(id),
+    @GetMapping("/oauth2/get/user")
+    public ResponseEntity<?> getEntity(
+            @RequestHeader(name = defaultAuthorization_header, required = true) String authorization,
+            @RequestParam(name = "id", required = false) String id,
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "active", required = false) String active,
+            @RequestHeader(name = "uppercase") Optional<Boolean> uppercase
+    ) {
+        return getEntity(authorization, id, name, active, uppercase, defaultTokenType, false);
+    }
+
+    private ResponseEntity<?> getEntity(
+            @RequestHeader(name = defaultAuthorization_header, required = true) String authorization,
+            @RequestParam(name = "id", required = false) String id,
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "active", required = false) String active,
+            @RequestHeader(name = "uppercase") Optional<Boolean> uppercase,
+            String tokenType,
+            boolean alternative
+    ) {
+
+        try {
+            checkToken(authorization, tokenType);
+        } catch (OAuthException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "invalid_token", "message", "Invalid authorization token."));
+        }
+
+        User user = new User(id == null ? 1 : Integer.parseInt(id),
                 name == null ? "Peter" : name,
-                active == null ? true : Boolean.parseBoolean(active));
+                active == null ? true : Boolean.parseBoolean(active),
+                alternative);
 
-        if(uppercase.isPresent() && uppercase.get()){
+        if (uppercase.isPresent() && uppercase.get()) {
             user.setName(user.getName().toUpperCase());
         }
 
-        return user;
+        return ResponseEntity.ok(user);
     }
 
-    private void checkToken(String token){
-        if(!String.format("%s %s", tokenType, successToken).equals(token)){
+    private void checkToken(String token) throws OAuthException {
+        checkToken(token, defaultTokenType);
+    }
+    private void checkToken(String token, String tokenType) throws OAuthException {
+        if (!String.format("%s %s", tokenType, successToken).equals(token)) {
             throw new OAuthException("Unrecognized token.");
         }
     }
 
     @ExceptionHandler(OAuthException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ControllerError handleException(OAuthException e){
+    public ControllerError handleException(OAuthException e) {
         return new ControllerError("OAuth2 security issue.", e.getMessage());
     }
 }

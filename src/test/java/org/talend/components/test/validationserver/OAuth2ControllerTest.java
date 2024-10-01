@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.ResponseEntity;
-import org.talend.components.test.validationserver.exception.OAuthException;
 import org.talend.components.test.validationserver.model.Token;
 import org.talend.components.test.validationserver.model.User;
 
@@ -46,11 +45,11 @@ class OAuth2ControllerTest {
         urlencodedForm.put(OAuth2Controller.grant_type, grantType);
         urlencodedForm.put(OAuth2Controller.scope, scope);
 
-        if(expectedAdditional != null){
+        if (expectedAdditional != null) {
             urlencodedForm.put("additional", expectedAdditional);
         }
 
-        Supplier<ResponseEntity<Token<?>>> getTokenSupplier = () -> controller.clientCredentialsToken(urlencodedForm,
+        Supplier<ResponseEntity<?>> getTokenSupplier = () -> controller.clientCredentialsToken(urlencodedForm,
                 Optional.ofNullable(expectedClientId),
                 Optional.ofNullable(expectedClientSecret),
                 Optional.ofNullable(expectedScope),
@@ -58,50 +57,59 @@ class OAuth2ControllerTest {
                 Optional.ofNullable(expiresInAsString));
 
         if (success) {
-            ResponseEntity<Token<?>> token = getTokenSupplier.get();
+            ResponseEntity<?> token = getTokenSupplier.get();
             Assertions.assertNotNull(token);
-            Assertions.assertEquals(token.getBody().getAccess_token(), OAuth2Controller.successToken);
-            Assertions.assertEquals(token.getBody().getToken_type(), OAuth2Controller.tokenType);
+            Token<?> body = (Token<?>) token.getBody();
+            Assertions.assertEquals(body.getAccess_token(), OAuth2Controller.successToken);
+            Assertions.assertEquals(body.getToken_type(), OAuth2Controller.defaultTokenType);
 
-            Object expiresIn = token.getBody().getExpires_in();
-            if("true".equals(expiresInAsString)){
+            Object expiresIn = body.getExpires_in();
+            if ("true".equals(expiresInAsString)) {
                 Assertions.assertTrue(expiresIn instanceof String);
-            }
-            else{
+            } else {
                 Assertions.assertTrue(expiresIn instanceof Long);
             }
 
         } else {
-            Assertions.assertThrows(OAuthException.class, () -> {
-                getTokenSupplier.get();
-            });
+            ResponseEntity<?> responseEntity = getTokenSupplier.get();
+            Assertions.assertEquals(401, responseEntity.getStatusCode().value());
         }
     }
 
     @ParameterizedTest
     @CsvSource({
-            "Bearer _success_token_,,,,true",
-            "Bearer _success_token_,5,,,true",
-            "Bearer _success_token_,,Jean,,true",
-            "Bearer _success_token_,,,false,true",
-            "Bearer _success_token_,10,John,false,true",
-            "Bearer _success_token_,7,Marc,true,true",
-            "Bearer _success_token_X,,,,false",
-            "BearerX _success_token_,,,,false"
+            "Bearer _success_token_,,,,true,false",
+            "Bearer _success_token_,5,,,true,false",
+            "Bearer _success_token_,,Jean,,true,false",
+            "Bearer _success_token_,,,false,true,false",
+            "Bearer _success_token_,10,John,false,true,false",
+            "Bearer _success_token_,7,Marc,true,true,false",
+            "Bearer _success_token_X,,,,false,false",
+            "BearerX _success_token_,,,,false,false",
+            "AlternativeTokenPrefix _success_token_,,,,true,true",
+            "AlternativeTokenPrefix _success_token_,5,,,true,true",
+            "AlternativeTokenPrefix _success_token_,,Jean,,true,true",
+            "AlternativeTokenPrefix _success_token_,,,false,true,true",
     })
-    public void getEntityTest(String secret, String id, String name, String active, Boolean success) {
-        Supplier<User> getUserSupplier = () -> controller.getEntity(secret, id, name, active, Optional.empty());
+    public void getEntityTest(String secret, String id, String name, String active, Boolean success, final boolean alternative) {
+        Supplier<ResponseEntity<?>> getUserSupplier = () -> {
+            if (!alternative) {
+                return controller.getEntity(secret, id, name, active, Optional.empty());
+            } else {
+                return controller.getAlternativeEntity(secret, id, name, active, Optional.empty());
+            }
+        };
 
         if (success) {
-            User user = getUserSupplier.get();
+            ResponseEntity<?> o = getUserSupplier.get();
+            User user = (User) o.getBody();
             Assertions.assertNotNull(user);
             Assertions.assertEquals(id == null ? 1 : Integer.parseInt(id), user.getId());
             Assertions.assertEquals(name == null ? "Peter" : name, user.getName());
             Assertions.assertEquals(active == null ? true : Boolean.parseBoolean(active), user.getActive());
         } else {
-            Assertions.assertThrows(OAuthException.class, () -> {
-                getUserSupplier.get();
-            });
+            ResponseEntity<?> responseEntity = getUserSupplier.get();
+            Assertions.assertEquals(401, responseEntity.getStatusCode().value());
         }
     }
 

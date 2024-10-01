@@ -335,24 +335,35 @@ $ curl -X POST http://127.0.0.1:8080/oauth2/client-credentials/token \
 You can ask for `user` entity in oauth section. It will expect the token:
 ```shell
 $ curl -X GET http://127.0.0.1:8080/oauth2/get/user \
-     -H 'Authorization: Bearer _success_token_'
+       -H 'Authorization: Bearer _success_token_'
      
-{"id":1,"name":"Peter","active":true}
+{"id":1,"name":"Peter","active":true,"alternative":false}
 ```
 You can give `id`, `name` and/or `active` HTTP query parameter to overwrite the `User` attribute value:
 ```shell
 $ curl -X GET 'http://127.0.0.1:8080/oauth2/get/user?id=3&name=John&active=false' \
-     -H 'Authorization: Bearer _success_token_'
+       -H 'Authorization: Bearer _success_token_'
      
-{"id":3,"name":"John","active":false}
+{"id":3,"name":"John","active":false,"alternative":false}
 ```
 If the given token is wrong, an error is returned:
 ```shell
 $ curl -X GET http://127.0.0.1:8080/oauth2/get/user \
-     -H 'Authorization: Bearer _xxxxx_'
+       -H 'Authorization: Bearer _xxxxx_'
      
 {"message":"OAuth2 security issue.","cause":"Unrecognized token."}
 ```
+### Alternative `oauth2/get/user`
+The alternative endpoint `oauth2/alternative/get/user` is the same as `oauth2/get/user` except that the oauth token has to be set in the `AlternativeAuthorization` header instead of `Authorization`, and, the token prefix is `AlternativeTokenPrefix` instead of `Bearer`.
+
+If this endpoint is called, the `alternative` attribute of the user is set to `true`:
+```shell
+$ curl -X GET http://127.0.0.1:9098/oauth2/alternative/get/user \
+       -H 'AlternativeAuthorization: AlternativeTokenPrefix _success_token_'
+{"id":1,"name":"Peter","active":true,"alternative":true}
+```
+
+
 
 # How to introducing new fonctionnalities
 This project is based on spring boot. You can easily add new endpoints that will suit to your own needs.

@@ -10,5 +10,6 @@ public class User {
     private Integer id;
     private String name;
     private Boolean active;
+    private Boolean alternative;
 
 }
